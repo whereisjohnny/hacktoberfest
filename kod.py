@@ -1,25 +1,24 @@
-# pip install transformers tensorflow  # lub pip install transformers torch, w zależności od wybranego frameworku
+# pip install transformers tensorflow
 
 import pandas as pd
+from transformers import BertTokenizer, TFBertForSequenceClassification
 
-# Wczytaj dane z pliku CSV (zmień na swoje dane)
+# Wczytaj dane z pliku CSV
 data = pd.read_csv('dane_wyborcze.csv')
 
 # Podziel dane na cechy i etykiety
 X = data['Wiadomość'].values
 y = data['Preferencje'].values
 
-from transformers import GPT2Tokenizer, TFGPT2ForSequenceClassification, TFAutoModelForSequenceClassification
-
-# Wybierz model GPT-3.5 w języku polskim
-model_name = "sberbank-ai/rugpt3.5-turbo"
+# Wybierz model PolBERT dla języka polskiego
+model_name = "dkleczek/bert-base-polish-cased-v1"
 
 # Wczytaj tokenizator i model
-tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-model = TFAutoModelForSequenceClassification.from_pretrained(model_name, num_labels=len(set(y)))
+tokenizer = BertTokenizer.from_pretrained(model_name)
+model = TFBertForSequenceClassification.from_pretrained(model_name, num_labels=len(set(y)))
 
 # Tokenizacja danych
-inputs = tokenizer(X.tolist(), padding=True, truncation=True, return_tensors="tf")
+inputs = tokenizer(list(X), padding=True, truncation=True, return_tensors="tf")
 
 # Trenowanie modelu
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
@@ -35,7 +34,7 @@ nowe_inputs = tokenizer(nowe_dane, padding=True, truncation=True, return_tensors
 predictions = model.predict(nowe_inputs)
 
 # Dekodowanie przewidywań
-predicted_labels = [tokenizer.convert_ids_to_tokens(pred.argmax()) for pred in predictions]
+predicted_labels = [tokenizer.decode(pred.argmax()) for pred in predictions.logits]
 
 print("Przewidywane preferencje wyborcze:")
 for i in range(len(nowe_dane)):
